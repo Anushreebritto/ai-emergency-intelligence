@@ -1,15 +1,16 @@
 """
-AI EMERGENCY INTELLIGENCE — Humanitarian Information Triage & Classification
+AI EMERGENCY INTELLIGENCE
+Humanitarian Information Triage & Classification
 
-ONNX Runtime version.
-Uses the optimized ONNX model stored in the Hugging Face repository.
+ONNX Runtime deployment version.
+The model is loaded from Hugging Face.
 
-Run:
+Run locally:
     python app.py
 """
-import os
 
-import torch
+import os
+import numpy as np
 import gradio as gr
 
 from transformers import AutoTokenizer
@@ -91,7 +92,18 @@ EXAMPLE_MESSAGES = [
 
 
 # ------------------------------------------------------------------
-# 4. INFERENCE
+# 4. SOFTMAX
+# ------------------------------------------------------------------
+
+def softmax(logits):
+    logits = np.asarray(logits, dtype=np.float32)
+    logits = logits - np.max(logits)
+    probabilities = np.exp(logits)
+    return probabilities / np.sum(probabilities)
+
+
+# ------------------------------------------------------------------
+# 5. INFERENCE
 # ------------------------------------------------------------------
 
 def classify_incident(text: str):
@@ -113,10 +125,10 @@ def classify_incident(text: str):
             "AWAITING INPUT",
         )
 
-    # Tokenize input text
+    # Tokenize input
     inputs = tokenizer(
         text,
-        return_tensors="pt",
+        return_tensors="np",
         truncation=True,
         padding=True,
         max_length=128,
@@ -128,12 +140,12 @@ def classify_incident(text: str):
     logits = outputs.logits
 
     # Convert logits to probabilities
-    probs = torch.softmax(logits, dim=-1)[0]
+    probs = softmax(logits[0])
 
-    # Get label mapping from model configuration
+    # Model label mapping
     id2label = model.config.id2label
 
-    # Rank all predictions
+    # Rank predictions
     ranked = sorted(
         (
             (
@@ -149,7 +161,7 @@ def classify_incident(text: str):
     # Top prediction
     top_label, top_conf = ranked[0]
 
-    # Top 3 predictions
+    # Top 3
     top3 = ranked[:3]
 
     readable_label = top_label.replace("_", " ").title()
@@ -161,7 +173,6 @@ def classify_incident(text: str):
         f"based on learned language patterns from the HumAID training data."
     )
 
-    # Top 3 display
     top3_lines = [
         f"**{i}. {lbl.replace('_', ' ').title()}** — {prob * 100:.1f}%"
         for i, (lbl, prob) in enumerate(top3, start=1)
@@ -184,7 +195,7 @@ def classify_incident(text: str):
 
 
 # ------------------------------------------------------------------
-# 5. CUSTOM CSS
+# 6. CUSTOM CSS
 # ------------------------------------------------------------------
 
 CUSTOM_CSS = """
@@ -326,7 +337,7 @@ CUSTOM_CSS = """
 
 
 # ------------------------------------------------------------------
-# 6. UI LAYOUT
+# 7. UI
 # ------------------------------------------------------------------
 
 with gr.Blocks(
@@ -359,7 +370,7 @@ with gr.Blocks(
             )
 
 
-    # Main input
+    # Input
     with gr.Group(elem_classes="op-panel"):
 
         gr.Markdown(
@@ -394,7 +405,7 @@ with gr.Blocks(
     status_line = gr.Markdown("STATUS: STANDING BY")
 
 
-    # Analysis result
+    # Results
     with gr.Row():
 
         with gr.Column(scale=1):
@@ -485,10 +496,7 @@ with gr.Blocks(
     )
 
 
-    # ------------------------------------------------------------------
-    # 7. EVENT HANDLER
-    # ------------------------------------------------------------------
-
+    # Event handler
     def run_analysis(text):
 
         (
