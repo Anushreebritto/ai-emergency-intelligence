@@ -5,3 +5,4 @@ tmp_trainer/
 *.log
 .DS_Store
 emergency_model/
+optimized_model/
