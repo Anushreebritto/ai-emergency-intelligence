@@ -25,7 +25,11 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 MODEL_PATH = "Anushreebritto2/emergency-intelligence-distilbert"
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
+model = AutoModelForSequenceClassification.from_pretrained(
+    MODEL_PATH,
+    device_map="cpu"
+)
+model.eval()
 model.eval()
 
 # HumAID / QCRI event-type labels, in the model's id2label order.
@@ -378,4 +382,7 @@ with gr.Blocks(css=CUSTOM_CSS, title="AI Emergency Intelligence") as demo:
 # 5. LAUNCH
 # ------------------------------------------------------------------
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(
+    server_name="0.0.0.0",
+    server_port=7860
+)
