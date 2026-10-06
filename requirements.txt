@@ -1,8 +1,10 @@
-transformers==5.17.0
+transformers
 torch
-datasets==5.0.1
+datasets
 scikit-learn
 matplotlib
-gradio==6.28.0
+gradio
 accelerate
-huggingface_hub<2.0
+optimum==2.1.0
+optimum-onnx==0.1.0
+onnxruntime==1.30.0
